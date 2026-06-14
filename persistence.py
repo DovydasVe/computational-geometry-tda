@@ -3,7 +3,9 @@ from itertools import combinations
 from scipy.spatial.distance import cdist
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 from topology import Simplex, SimplicialComplex
+from linear_algebra import reduce_boundary_matrix
 
 
 # F - filtration class, RF - rips filtration, P - persistence
@@ -67,6 +69,47 @@ class Filtration:
                 if self.filtration[face] > value:
                     return False
         return True
+
+    def build_filtration_boundary_matrix(self):
+        self.sort()
+        n = len(self.filtration)
+        bd_matrix = np.zeros((n,n), dtype=int)
+        index = {s: i for i, s in enumerate(self.filtration)}
+
+        for j, simplex in enumerate(self.filtration.keys()):
+            boundary = simplex.boundary()
+            for bd in boundary:
+                i = index[bd]
+                bd_matrix[i, j] = 1
+
+        return bd_matrix
+    
+    def extract_pairs(self):
+        bd_matrix = self.build_filtration_boundary_matrix()
+        reduced_matrix = reduce_boundary_matrix(bd_matrix)
+        simplex_list = list(self.filtration.keys())
+
+        pairs = {} 
+        
+        for j in range(np.shape(reduced_matrix)[1]):
+            col = reduced_matrix[:,j]
+            if np.count_nonzero(col) == 0:
+                simplex = simplex_list[j]
+                pair = PersistencePair(simplex.dim(), self.filtration[simplex], float("inf"))
+                pairs[j] = pair
+                
+            else:
+                i = np.where(col == 1)[0][-1]
+                birth_simplex = simplex_list[i]
+                death_simplex = simplex_list[j]
+                pair = PersistencePair(
+                    birth_simplex.dim(),
+                    self.filtration[birth_simplex],
+                    self.filtration[death_simplex]
+                )
+                pairs[i] = pair
+
+        return list(pairs.values())
 
 
 def rips_filtration(points):
@@ -140,27 +183,51 @@ class PersistenceDiagram:
 
     def plot_diagram(self):
         """ Drops infinite pairs """
-        births, deaths = [], []
+        births, deaths, dims = [], [], []
+        bar_data = []
+
+        finite_deaths = [p.death for p in self.all_pairs if not p.is_infinite()]
+        max_finite = max(finite_deaths) if finite_deaths else 1
+        inf_val = max_finite + 0.5
 
         for p in self.all_pairs:
+            dim_str = f"H{p.dim}"
             if not p.is_infinite():
                 births.append(p.birth)
                 deaths.append(p.death)
+                dims.append(dim_str)
+                bar_data.append((dim_str, p.birth, p.death, False))
+            else:
+                bar_data.append((dim_str, p.birth, inf_val, True))
 
         sns.set_theme(style="whitegrid")
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
-        plt.figure(figsize=(6, 6))
-
-        sns.scatterplot(x=births, y=deaths, s=60)
+        sns.scatterplot(x=births, y=deaths, hue=dims, s=60, ax=ax1)
 
         min_val = min(births + deaths) if births else 0
         max_val = max(births + deaths) if births else 1
-        plt.plot([min_val, max_val], [min_val, max_val], "--", linewidth=1)
 
-        plt.xlabel("Birth")
-        plt.ylabel("Death")
-        plt.grid(False)
+        ax1.plot([min_val, max_val], [min_val, max_val], "--", linewidth=1, color="gray")
 
+        ax1.set_xlabel("Birth")
+        ax1.set_ylabel("Death")
+        ax1.grid(False)
+        ax1.legend(title="Homology", loc="lower right")
+
+        bar_data.sort(key=lambda x: (x[0], x[1]))
+        unique_dims = sorted(list(set(d[0] for d in bar_data)))
+        colors = {d: sns.color_palette()[i] for i, d in enumerate(unique_dims)}
+
+        for i, (dim, b, d, inf) in enumerate(bar_data):
+            ax2.hlines(y=i, xmin=b, xmax=d, color=colors[dim], linewidth=4)
+            if inf:
+                ax2.annotate('', xy=(d + 0.1, i), xytext=(d, i), arrowprops=dict(arrowstyle="->", color=colors[dim], lw=2))
+
+        ax2.set_xlabel("Filtration Value")
+        ax2.set_yticks([])
+
+        plt.tight_layout()
         plt.show()
     
     def __repr__(self):
@@ -174,8 +241,8 @@ if __name__ == "__main__":
         s3 = Simplex([0])
         F = Filtration()
         F.add(s1, 0.4)
-        F.add(s2, 0.3)
-        F.add(s3, 0.2)
+        F.add(s2, 0.2)
+        F.add(s3, 0.1)
         print(F.filtration)
         F.sort()
         print(F.filtration)
@@ -183,6 +250,15 @@ if __name__ == "__main__":
         print(K)
         print(F.filtration_values())
         print(F.is_valid())
+
+        print()
+        print("Persistence pairing logic")
+        F.add(Simplex([2]), 0.3)
+        F.add(Simplex([0,2]), 0.6)
+        F.add(Simplex([1,2]), 0.5)
+        F.add(Simplex([0,1,2]), 0.7)
+        print(reduce_boundary_matrix(F.build_filtration_boundary_matrix()))
+        print(F.extract_pairs())
 
 
     if TESTING_RF:

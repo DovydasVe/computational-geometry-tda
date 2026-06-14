@@ -1,10 +1,12 @@
 import numpy as np
 
-TESTING = True
+# S - simple reduction, P - persistence-compatible reduction
+TESTING_S = False
+TESTING_P = True
 
 def reduce_matrix_mod2(M):
     """
-    Not fully mathematically canonical, might break in complex use cases
+    Legacy matrix reduction algorithm, not used for persistence.
     """
     if type(M) == int:
         return 0, 0
@@ -31,7 +33,46 @@ def reduce_matrix_mod2(M):
     return new_M, rank
 
 
+def reduce_boundary_matrix(M):
+    M = M.copy()
+    n_cols = M.shape[1]
+
+    def low(col):
+        nz = np.where(col == 1)[0]
+        return nz[-1] if len(nz) else None
+
+    for j in range(n_cols):
+        while True:
+            lj = low(M[:, j])
+            if lj is None:
+                break
+
+            changed = False
+            for i in range(j):
+                if low(M[:, i]) == lj:
+                    M[:, j] = (M[:, j] + M[:, i]) % 2
+                    changed = True
+                    break
+
+            if not changed:
+                break
+    
+    return M
+
+
 if __name__ == "__main__":
-    if TESTING:
+    if TESTING_S:
         M = np.array([[1,0], [1,0], [1,0], [1,0], [1,0]])
         print(reduce_matrix_mod2(M))
+
+    if TESTING_P:
+        bd_matrix = np.array([
+            [0, 0, 0, 1, 0, 1, 0],
+            [0, 0, 0, 1, 1, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0]
+        ])
+        print(reduce_boundary_matrix(bd_matrix))
