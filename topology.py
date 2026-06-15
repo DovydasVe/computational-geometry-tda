@@ -7,7 +7,7 @@ from linear_algebra import reduce_matrix_mod2
 TESTING_S = False
 TESTING_SC = False
 TESTING_C = False
-TESTING_BD = True
+TESTING_BD = False
 
 
 class Simplex:
@@ -49,7 +49,7 @@ class Simplex:
         return hash(self.vertices)
     
     def __contains__(self, other):
-        return other in self.faces()
+        return set(other.vertices).issubset(self.vertices)
     
     def __repr__(self):
         return f"{self.vertices}"
@@ -71,6 +71,8 @@ class SimplicialComplex:
         self.by_dim = dict()
 
     def add_simplex(self, simplex):
+        if simplex in self.simplices:
+            return
         faces = simplex.faces()
         self.simplices.update(faces)
         for face in faces:
@@ -84,6 +86,8 @@ class SimplicialComplex:
             self.add_simplex(simplex)
 
     def k_simplices(self, k):
+        if k not in self.by_dim:
+            return []
         simplices_set = self.by_dim[k].copy()
         return sorted(simplices_set, key=lambda s: s.vertices)
 
@@ -156,6 +160,7 @@ class SimplicialComplex:
         np.fill_diagonal(adjacency_matrix, 0)
         n = len(points)
 
+        vertices = [Simplex((i,)) for i in range(n)]
         edges = []
         for i, j in combinations(range(n), 2):
             if adjacency_matrix[i, j]:
@@ -170,12 +175,13 @@ class SimplicialComplex:
                 adjacency_matrix[j, k] and adjacency_matrix[j, l] and adjacency_matrix[k, l]):
                 tetras.append(Simplex((i, j, k, l)))
 
-        self.add_simplices(edges + triangles + tetras)
+        self.add_simplices(vertices + edges + triangles + tetras)
         return self
     
     def nerve_complex(self, sets):
         n = len(sets)
 
+        vertices = [Simplex((i,)) for i in range(n)]
         edges = []
         for i, j in combinations(range(n), 2):
             if sets[i] & sets[j]:
@@ -189,7 +195,7 @@ class SimplicialComplex:
             if sets[i] & sets[j] & sets[k] & sets[l]:
                 tetras.append(Simplex((i, j, k, l)))
 
-        self.add_simplices(edges + triangles + tetras)
+        self.add_simplices(vertices + edges + triangles + tetras)
         return self
         
 
@@ -202,9 +208,9 @@ if __name__ == "__main__":
         print(my_simplex.vertices)
         print(my_simplex.dim())
         print(my_simplex.faces())
-        print(my_simplex == my_other_simplex)
+        print("Expected False |", my_simplex == my_other_simplex)
         print(hash(my_simplex))
-        print(my_simplex in my_other_simplex)
+        print("Expected True |", my_simplex in my_other_simplex)
 
 
     if TESTING_SC:
@@ -223,11 +229,11 @@ if __name__ == "__main__":
         complex = SimplicialComplex()
         rips = complex.rips_complex([(0,0), (1,0), (0,1), (1,1)], 2)
         print(rips.by_dim)
-        print(rips.is_valid())
+        print("Expected True |", rips.is_valid())
         complex = SimplicialComplex()
         nerve = complex.nerve_complex([{0,1}, {1,2}, {2,3}, {3,0}])
         print(nerve.by_dim)
-        print(nerve.is_valid())
+        print("Expected True |", nerve.is_valid())
 
 
     if TESTING_BD:
@@ -236,7 +242,7 @@ if __name__ == "__main__":
         complex.add_simplex(triangle)
         bd_matrix_2 = complex.boundary_matrix(2)
         bd_matrix_1 = complex.boundary_matrix(1)
-        print(complex.verify_boundary_property())
+        print("Expected True |", complex.verify_boundary_property())
         print(complex.betti_number(0))
         other_triangle = Simplex([1,2,3])
         complex.add_simplex(other_triangle)

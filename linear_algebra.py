@@ -2,7 +2,7 @@ import numpy as np
 
 # S - simple reduction, P - persistence-compatible reduction
 TESTING_S = False
-TESTING_P = True
+TESTING_P = False
 
 def reduce_matrix_mod2(M):
     """
@@ -41,20 +41,19 @@ def reduce_boundary_matrix(M):
         nz = np.where(col == 1)[0]
         return nz[-1] if len(nz) else None
 
+    pivot_to_col = {}
+
     for j in range(n_cols):
         while True:
             lj = low(M[:, j])
             if lj is None:
                 break
 
-            changed = False
-            for i in range(j):
-                if low(M[:, i]) == lj:
-                    M[:, j] = (M[:, j] + M[:, i]) % 2
-                    changed = True
-                    break
-
-            if not changed:
+            if lj in pivot_to_col:
+                i = pivot_to_col[lj]
+                M[:, j] = (M[:, j] + M[:, i]) % 2
+            else:
+                pivot_to_col[lj] = j
                 break
     
     return M

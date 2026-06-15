@@ -11,7 +11,7 @@ from linear_algebra import reduce_boundary_matrix
 # F - filtration class, RF - rips filtration, P - persistence
 TESTING_F = False
 TESTING_RF = False
-TESTING_P = True
+TESTING_P = False
 
 
 class Filtration:
@@ -249,7 +249,7 @@ if __name__ == "__main__":
         K = F.get_complex(0.3)
         print(K)
         print(F.filtration_values())
-        print(F.is_valid())
+        print("Expected True |", F.is_valid())
 
         print()
         print("Persistence pairing logic")
@@ -265,7 +265,7 @@ if __name__ == "__main__":
         points = [(0,0), (0,1), (1,0), (1,1)]
         rf = rips_filtration(points)
         print(rf.filtration)
-        print(rf.is_valid())
+        print("Expected True |", rf.is_valid())
     
 
     if TESTING_P:
