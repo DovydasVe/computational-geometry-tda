@@ -42,6 +42,14 @@ class Simplex:
                 bd.append(face)
         return bd
     
+    def return_values(self):
+        if self.dim() == 0:
+            return self.vertices[0]
+        value_list = list()
+        for vertex in self.vertices:
+            value_list.append(vertex)
+        return value_list
+    
     def __eq__(self, other):
         return self.vertices == other.vertices
     

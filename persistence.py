@@ -8,9 +8,10 @@ from topology import Simplex, SimplicialComplex
 from linear_algebra import reduce_boundary_matrix
 
 
-# F - filtration class, RF - rips filtration, P - persistence
+# F - filtration class, RF - rips filtration, ST - star filtration, P - persistence
 TESTING_F = False
 TESTING_RF = False
+TESTING_ST = True
 TESTING_P = False
 
 
@@ -111,6 +112,9 @@ class Filtration:
 
         return list(pairs.values())
 
+    def __repr__(self):
+        return f"{self.filtration}"
+
 
 def rips_filtration(points):
     F = Filtration()
@@ -129,6 +133,33 @@ def rips_filtration(points):
 
     return F
     
+
+def star_filtration(sc, vertex_values):
+
+    def simplex_value(simplex, vertex_values=vertex_values):
+        faces = simplex.faces()
+        vertices = list()
+        for face in faces:
+            if face.dim() == 0:
+                vertices.append(face)
+
+        if vertices:
+            maximum = vertex_values[vertices[0].return_values()]
+            for vertex in vertices:
+                key = vertex.return_values()
+                if vertex_values[key] > maximum:
+                    maximum = vertex_values[key]
+        
+        return maximum
+
+    F = Filtration()
+    for simplex in sc.simplices:
+        val = simplex_value(simplex)
+        F.add(simplex, val)
+    F.sort()
+
+    return F
+
 
 class PersistencePair:
     def __init__(self, dim, birth, death):
@@ -266,6 +297,14 @@ if __name__ == "__main__":
         rf = rips_filtration(points)
         print(rf.filtration)
         print("Expected True |", rf.is_valid())
+
+    if TESTING_ST:
+        sc = SimplicialComplex()
+        sc.add_simplex(Simplex([0,1,2]))
+        vertex_values = {0: 0, 1: 2, 2: 1}
+        F = star_filtration(sc, vertex_values)
+        print(F)
+        print(F.extract_pairs())
     
 
     if TESTING_P:
