@@ -1,7 +1,10 @@
 from itertools import combinations
 import numpy as np
 from scipy.spatial.distance import cdist
-from linear_algebra import reduce_matrix_mod2
+try:
+    from core.linear_algebra import reduce_matrix_mod2
+except ModuleNotFoundError:
+    from linear_algebra import reduce_matrix_mod2
 
 # S - simplex, SC - simplicial complex, C - specific complexes, BD - boundary matrix
 TESTING_S = False
@@ -13,27 +16,24 @@ TESTING_BD = False
 class Simplex:
     """
     Represents a simplex as a finite set of vertices.
-
-    Vertices are stored as a sorted tuple of unique labels to ensure a canonical form
-    for equality and hashing. The simplex dimension is defined as (number of vertices - 1).
-
-    Provides functionality to compute all non-empty faces of the simplex and to check
-    set-based equality and membership relationships between simplices.
-
-    Method __contains__ is slow in big datasets.
+    Vertices are stored as a sorted tuple of unique labels to ensure a canonical form for equality and hashing.
     """
     def __init__(self, vertices):
+        """Initializes the simplex with a set of vertices, storing them as a sorted tuple of unique labels."""
         vertices_copy = list(vertices).copy()
         self.vertices = tuple(sorted(set(vertices_copy)))
 
     def dim(self):
+        """Returns the dimension of the simplex, defined as the number of vertices minus one."""
         return len(self.vertices) - 1
 
     def faces(self):
+        """Returns a list of all non-empty faces of the simplex."""
         v = self.vertices
         return [Simplex(combo) for r in range(1, len(v) + 1) for combo in combinations(v, r)]
     
     def boundary(self):
+        """Returns a list of all codimension-1 faces of the simplex."""
         faces = self.faces()
         target = self.dim() - 1
         bd = []
@@ -43,6 +43,7 @@ class Simplex:
         return bd
     
     def return_values(self):
+        """Returns the vertices of the simplex as an integer (for 0-simplices) or a list of integers."""
         if self.dim() == 0:
             return self.vertices[0]
         value_list = list()
@@ -51,34 +52,34 @@ class Simplex:
         return value_list
     
     def __eq__(self, other):
+        """Checks if this simplex is equal to another simplex based on their vertices."""
         return self.vertices == other.vertices
     
     def __hash__(self):
+        """Returns the hash of the simplex based on its vertices."""
         return hash(self.vertices)
     
     def __contains__(self, other):
+        """Checks if another simplex is a face of this simplex."""
         return set(other.vertices).issubset(self.vertices)
     
     def __repr__(self):
+        """Returns the string representation of the simplex."""
         return f"{self.vertices}"
 
 
 class SimplicialComplex:
     """
-    Represents a simplicial complex as a collection of simplices closed under taking faces.
-
-    Internally stores all simplices in a set and enforces the closure property by automatically
-    adding all faces of any inserted simplex. Optionally maintains a dimension-indexed dictionary
-    for efficient access to simplices by dimension.
-
-    Provides utility methods to add simplices, compute the overall dimension, extract k-skeletons,
-    and verify the closure condition (validity) of the complex.
+    Represents a simplicial complex as a collection of simplices closed under the face relation.
+    Provides methods to add simplices, query dimensions, compute boundary matrices, and compute Betti numbers.
     """
     def __init__(self):
+        """Initializes an empty simplicial complex."""
         self.simplices = set()
         self.by_dim = dict()
 
     def add_simplex(self, simplex):
+        """Adds a simplex and all of its faces to the simplicial complex."""
         if simplex in self.simplices:
             return
         faces = simplex.faces()
@@ -90,19 +91,23 @@ class SimplicialComplex:
             self.by_dim[key].add(face)
                 
     def add_simplices(self, list_of_simplices):
+        """Adds a list of simplices to the simplicial complex."""
         for simplex in list_of_simplices:
             self.add_simplex(simplex)
 
     def k_simplices(self, k):
+        """Returns a sorted list of all k-dimensional simplices in the complex."""
         if k not in self.by_dim:
             return []
         simplices_set = self.by_dim[k].copy()
         return sorted(simplices_set, key=lambda s: s.vertices)
 
     def dim(self):
+        """Returns the maximum dimension of the simplices in the complex."""
         return max(self.by_dim.keys()) if self.by_dim else 0
     
     def is_valid(self):
+        """Verifies if the complex is closed under the face relation, returning True if valid and False otherwise."""
         for simplex in self.simplices:
             faces = simplex.faces()
             for face in faces:
@@ -111,13 +116,14 @@ class SimplicialComplex:
         return True
     
     def skeleton(self, k):
+        """Returns the set of all simplices in the complex of dimension at most k."""
         skeleton_set = set()
         for i in range(k+1):
             skeleton_set.update(self.by_dim[i])
         return skeleton_set
     
     def boundary_matrix(self, k):
-        """ n x m matrix """
+        """Computes and returns the k-th boundary matrix of the complex over Z_2."""
         if k <= 0 or k > self.dim():
             return 0
         cols = self.k_simplices(k)
@@ -138,6 +144,7 @@ class SimplicialComplex:
         return bd_matrix
 
     def verify_boundary_property(self):
+        """Verifies that the composition of consecutive boundary operators is zero mod 2, returning True if so."""
         n = self.dim()
         if n <= 1:
             return True
@@ -150,6 +157,7 @@ class SimplicialComplex:
         return True
 
     def betti_number(self, k):
+        """Computes and returns the k-th Betti number of the simplicial complex."""
         bd_0 = self.boundary_matrix(k)
         rank_0 = reduce_matrix_mod2(bd_0)[1]
         bd_1 = self.boundary_matrix(k+1)
@@ -159,10 +167,11 @@ class SimplicialComplex:
         return n_0 - rank_0 - rank_1
         
     def __repr__(self):
+        """Returns the string representation of the simplicial complex."""
         return f"{self.simplices}"
     
     def rips_complex(self, points, eps):
-        """ Uses Euclidean norm """
+        """Constructs and returns the Vietoris-Rips complex of a point cloud for a given threshold epsilon."""
         distance_matrix = cdist(points, points, metric='euclidean')
         adjacency_matrix = (distance_matrix <= eps).astype(int)
         np.fill_diagonal(adjacency_matrix, 0)
@@ -187,6 +196,7 @@ class SimplicialComplex:
         return self
     
     def nerve_complex(self, sets):
+        """Constructs and returns the nerve complex of a family of sets."""
         n = len(sets)
 
         vertices = [Simplex((i,)) for i in range(n)]

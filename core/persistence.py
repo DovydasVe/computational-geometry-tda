@@ -4,8 +4,12 @@ from scipy.spatial.distance import cdist
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
-from topology import Simplex, SimplicialComplex
-from linear_algebra import reduce_boundary_matrix
+try:
+    from core.topology import Simplex, SimplicialComplex
+    from core.linear_algebra import reduce_boundary_matrix
+except ModuleNotFoundError:
+    from topology import Simplex, SimplicialComplex
+    from linear_algebra import reduce_boundary_matrix
 
 
 # F - filtration class, RF - rips filtration, ST - star filtration, P - persistence
@@ -16,10 +20,16 @@ TESTING_P = False
 
 
 class Filtration:
+    """
+    Represents a filtered simplicial complex as a sequence of simplices ordered by their birth times.
+    Provides methods to sort the filtration, build boundary matrices, and extract persistence pairs.
+    """
     def __init__(self):
+        """Initializes an empty filtration."""
         self.filtration = dict()
 
     def add(self, simplex, value):
+        """Adds a simplex with a given filtration value, keeping the minimal value if already present."""
         if simplex in self.filtration:
             if value < self.filtration[simplex]:
                 self.filtration[simplex] = value
@@ -27,6 +37,7 @@ class Filtration:
             self.filtration[simplex] = value
 
     def sort(self):
+        """Sorts the filtration by birth time, resolving ties by simplex dimension to ensure validity."""
         grouped_dict = defaultdict(list)
 
         for key, value in self.filtration.items():
@@ -47,6 +58,7 @@ class Filtration:
         self.filtration = sorted_dict
 
     def get_complex(self, k):
+        """Returns the simplicial complex at a given filtration threshold value k."""
         simplices_list = list()
 
         for key, value in self.filtration.items():
@@ -59,9 +71,11 @@ class Filtration:
         return K
 
     def filtration_values(self):
+        """Returns a sorted list of all unique filtration values in the filtration."""
         return sorted(list(set(v for v in self.filtration.values())))
     
     def is_valid(self):
+        """Verifies if the filtration is valid by checking face and coface birth values."""
         for simplex, value in self.filtration.items():
             faces = simplex.faces()
             for face in faces:
@@ -72,6 +86,7 @@ class Filtration:
         return True
 
     def build_filtration_boundary_matrix(self):
+        """Builds and returns the boundary matrix of the filtered simplicial complex."""
         self.sort()
         n = len(self.filtration)
         bd_matrix = np.zeros((n,n), dtype=int)
@@ -86,6 +101,7 @@ class Filtration:
         return bd_matrix
     
     def extract_pairs(self):
+        """Reduces the boundary matrix and returns a list of birth-death persistence pairs."""
         bd_matrix = self.build_filtration_boundary_matrix()
         reduced_matrix = reduce_boundary_matrix(bd_matrix)
         simplex_list = list(self.filtration.keys())
@@ -113,10 +129,12 @@ class Filtration:
         return list(pairs.values())
 
     def __repr__(self):
+        """Returns the string representation of the filtration mapping."""
         return f"{self.filtration}"
 
 
 def rips_filtration(points):
+    """Constructs and returns a Vietoris-Rips filtration of a point cloud up to dimension 2."""
     F = Filtration()
     distance_matrix = cdist(points, points, metric='euclidean')
     n = len(points)
@@ -135,8 +153,10 @@ def rips_filtration(points):
     
 
 def star_filtration(sc, vertex_values):
+    """Constructs and returns the star filtration of a simplicial complex given values on its vertices."""
 
     def simplex_value(simplex, vertex_values=vertex_values):
+        """Computes the filtration value of a simplex as the maximum of its vertex values."""
         faces = simplex.faces()
         vertices = list()
         for face in faces:
@@ -162,31 +182,44 @@ def star_filtration(sc, vertex_values):
 
 
 class PersistencePair:
+    """
+    Represents a persistence pair (homology class birth and death) in topological data analysis.
+    """
     def __init__(self, dim, birth, death):
+        """Initializes a persistence pair with a dimension, birth time, and death time."""
         self.dim = dim
         self.birth = birth
         self.death = death
 
     def lifetime(self):
+        """Returns the lifetime of the homology class (death minus birth, or 'inf' for infinite classes)."""
         if self.death == "inf":
             return self.death
         return self.death - self.birth
     
     def is_infinite(self):
+        """Returns True if the homology class never dies, and False otherwise."""
         return float(self.death) == float("inf")
 
     def __repr__(self):
+        """Returns the string representation of the persistence pair."""
         return f"{self.dim, self.birth, self.death}"
 
 
 class PersistenceDiagram:
+    """
+    Represents a collection of persistence pairs, providing methods for barcode output and diagram plotting.
+    """
     def __init__(self):
+        """Initializes an empty persistence diagram."""
         self.all_pairs = list()
 
     def add_pair(self, pair):
+        """Adds a persistence pair to the diagram."""
         self.all_pairs.append(pair)
 
     def pairs_by_dim(self, k):
+        """Returns all persistence pairs of dimension k."""
         k_pairs = list()
         for pair in self.all_pairs:
             if pair.dim == k:
@@ -194,6 +227,7 @@ class PersistenceDiagram:
         return k_pairs
     
     def infinite_pairs(self):
+        """Returns a list of all infinite persistence pairs in the diagram."""
         inf_pairs = list()
         for pair in self.all_pairs:
             if pair.is_infinite():
@@ -201,6 +235,7 @@ class PersistenceDiagram:
         return inf_pairs
     
     def barcode(self):
+        """Prints the barcode representation of the persistence diagram."""
         h_dict = dict()
         dims = set(pair.dim for pair in self.all_pairs)
         for n in sorted(dims):
@@ -213,7 +248,7 @@ class PersistenceDiagram:
                 print(f"[{v.birth}, {v.death})")
 
     def plot_diagram(self):
-        """ Drops infinite pairs """
+        """Plots the persistence diagram scatterplot and barcode side by side."""
         births, deaths, dims = [], [], []
         bar_data = []
 

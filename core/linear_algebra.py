@@ -5,9 +5,7 @@ TESTING_S = False
 TESTING_P = False
 
 def reduce_matrix_mod2(M):
-    """
-    Legacy matrix reduction algorithm, not used for persistence.
-    """
+    """Reduces a binary matrix modulo 2 using column operations, returning the reduced matrix and its rank."""
     if type(M) == int:
         return 0, 0
 
@@ -34,6 +32,7 @@ def reduce_matrix_mod2(M):
 
 
 def reduce_boundary_matrix(M):
+    """Reduces a boundary matrix modulo 2 using persistence-compatible column reduction, returning the reduced boundary matrix."""
     M = M.copy()
     n_cols = M.shape[1]
 
