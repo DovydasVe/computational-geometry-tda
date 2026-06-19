@@ -1,9 +1,14 @@
 from collections import defaultdict
 from itertools import combinations
 from scipy.spatial.distance import cdist
-import seaborn as sns
-import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
+sns.set_theme(style="whitegrid")
+palette = sns.color_palette("bright")
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+
+
 try:
     from core.topology import Simplex, SimplicialComplex
     from core.linear_algebra import reduce_boundary_matrix
@@ -16,7 +21,7 @@ except ModuleNotFoundError:
 TESTING_F = False
 TESTING_RF = False
 TESTING_ST = True
-TESTING_P = False
+TESTING_P = True
 
 
 class Filtration:
@@ -266,31 +271,47 @@ class PersistenceDiagram:
             else:
                 bar_data.append((dim_str, p.birth, inf_val, True))
 
-        sns.set_theme(style="whitegrid")
+        unique_dims = {0, 1}
+        for p in self.all_pairs:
+            unique_dims.add(p.dim)
+        unique_dims = sorted(list(unique_dims))
+
+        colors = {f"H{d}": palette[i] for i, d in enumerate(unique_dims)}
+
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
-        sns.scatterplot(x=births, y=deaths, hue=dims, s=60, ax=ax1)
+        sns.scatterplot(x=births, y=deaths, hue=dims, s=60, ax=ax1, palette=colors)
 
         min_val = min(births + deaths) if births else 0
         max_val = max(births + deaths) if births else 1
 
         ax1.plot([min_val, max_val], [min_val, max_val], "--", linewidth=1, color="gray")
 
-        ax1.set_xlabel("Birth")
-        ax1.set_ylabel("Death")
-        ax1.grid(False)
-        ax1.legend(title="Homology", loc="lower right")
+        ax1.set_title("Persistence Diagram", fontsize=18, pad=15)
+        ax1.set_xlabel("Birth", fontsize=15, labelpad=15)
+        ax1.set_ylabel("Death", fontsize=15, labelpad=15)
+
+        handles = [
+            Line2D([0], [0],
+                marker='o',
+                linestyle='',
+                color=colors[f"H{d}"],
+                label=f"H{d}",
+                markersize=8)
+            for d in unique_dims
+        ]
+
+        ax1.legend(handles=handles, title="", fontsize=13)
 
         bar_data.sort(key=lambda x: (x[0], x[1]))
-        unique_dims = sorted(list(set(d[0] for d in bar_data)))
-        colors = {d: sns.color_palette()[i] for i, d in enumerate(unique_dims)}
-
         for i, (dim, b, d, inf) in enumerate(bar_data):
             ax2.hlines(y=i, xmin=b, xmax=d, color=colors[dim], linewidth=4)
             if inf:
-                ax2.annotate('', xy=(d + 0.1, i), xytext=(d, i), arrowprops=dict(arrowstyle="->", color=colors[dim], lw=2))
+                ax2.annotate('', xy=(d + 0.1, i), xytext=(d, i),
+                             arrowprops=dict(arrowstyle="->", color=colors[dim], lw=2))
 
-        ax2.set_xlabel("Filtration Value")
+        ax2.set_title("Persistence Barcode", fontsize=18, pad=15)
+        ax2.set_xlabel("Filtration Value", fontsize=15, labelpad=15)
         ax2.set_yticks([])
 
         plt.tight_layout()
