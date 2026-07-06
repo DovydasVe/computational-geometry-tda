@@ -13,7 +13,7 @@ A lightweight Python implementation of Topological Data Analysis (TDA) core algo
 * **Vectorization & Representations (`core/representations.py`)** *(Planned/In Progress)*: Vector representations of persistent homology to integrate TDA with standard machine learning. Includes the implementation of **Persistence Images (Adams et al., 2017)**.
 
 ### 2. Case Studies & Applications
-* **Mathematical Structures (`notebooks/case_study_mathematical_structures.ipynb`)**: Demonstrates Betti numbers, boundary matrices, and persistent homology computation on standard geometric shapes: the solid disk $B^2$, circle $S^1$, hollow 2-sphere $S^2$ (tetrahedron boundary), and 2D torus $T^2$.
+* **Mathematical Structures (`notebooks/case_study_mathematical_structures.ipynb`)**: Demonstrates Betti numbers, boundary matrices, and persistent homology computation on standard geometric shapes: the solid disk $B^2$, circle $S^1$, hollow 2-sphere $S^2$ (tetrahedron boundary), and 2-torus $T^2$.
 * **Noisy Synthetic Circle (`notebooks/case_study_synthetic_dataset.ipynb`)**: Analyzes noise sensitivity and extracts persistent homology signatures for a noisy point cloud circle, validating custom implementations against `ripser`.
 * **NYC Temperature Dataset (`notebooks/case_study_real_dataset.ipynb`)**: Applies 2D time-delay embeddings to monthly average temperatures in Central Park, NYC, to analyze seasonal cycles as topological loops.
 
@@ -21,6 +21,6 @@ A lightweight Python implementation of Topological Data Analysis (TDA) core algo
 
 ## Reproduced Papers
 
-### 1. Persistence Images: A Stable Vector Representation of Persistent Homology
-* **Citation**: Adams, H., Emerson, T., Kirby, M., Neville, R., Peterson, C., Shipman, P., Wanner, S., Imhof, P., & Ziegelmeier, L. (2017). *Persistence Images: A Stable Vector Representation of Persistent Homology*. Journal of Machine Learning Research, 18(1), 218-257.
+### 1. Persistence Images: A Stable Vector Representation of Persistent Homology (Planned/In Progress)
+* **Citation**: Adams, H., Emerson, T., Kirby, M., Neville, R., Peterson, C., Shipman, P., Chepushtanova, S., Hanson, E., Motta, F., & Ziegelmeier, L. (2017). *Persistence Images: A Stable Vector Representation of Persistent Homology*. Journal of Machine Learning Research, 18(8), 1-35.
 * **Replication Scope**: Implementation of the `PersistenceImage` class in `core/representations.py`, including coordinate rotation, resolution setup, Gaussian kernel smoothing, and weight scaling. Replicating the stability properties and classification experiments in the case study at `reproductions/adams2017_persistence_images/`.

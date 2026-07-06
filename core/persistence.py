@@ -8,6 +8,7 @@ palette = sns.color_palette("bright")
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
+from ripser import ripser
 
 try:
     from core.topology import Simplex, SimplicialComplex
@@ -17,11 +18,12 @@ except ModuleNotFoundError:
     from linear_algebra import reduce_boundary_matrix
 
 
-# F - filtration class, RF - rips filtration, ST - star filtration, P - persistence
+# F - filtration class, RF - rips filtration, ST - star filtration, P - persistence, ripser - library
 TESTING_F = False
 TESTING_RF = False
-TESTING_ST = True
-TESTING_P = True
+TESTING_ST = False
+TESTING_P = False
+TESTING_ripser = False
 
 
 class Filtration:
@@ -131,15 +133,45 @@ class Filtration:
                 )
                 pairs[i] = pair
 
-        return list(pairs.values())
+        # Filter out trivial features with zero lifetime
+        return [p for p in pairs.values() if p.lifetime() != 0.0]
 
     def __repr__(self):
         """Returns the string representation of the filtration mapping."""
         return f"{self.filtration}"
 
 
-def rips_filtration(points):
-    """Constructs and returns a Vietoris-Rips filtration of a point cloud up to dimension 2."""
+class RipserFiltration(Filtration):
+    """
+    A filtration wrapper that delegates the persistent homology computation to the
+    optimized `ripser` library, returning standard `PersistencePair` objects.
+    """
+    def __init__(self, points, max_dim):
+        super().__init__()
+        self.points = points
+        self.max_dim = max_dim
+
+    def extract_pairs(self):
+        result = ripser(np.array(self.points), maxdim=self.max_dim)
+        dgms = result['dgms']
+
+        pairs = []
+        for dim, dgm in enumerate(dgms):
+            for birth, death in dgm:
+                pairs.append(PersistencePair(dim, float(birth), float(death)))
+                
+        return pairs
+
+
+def rips_filtration(points, max_dim=2, use_ripser=False):
+    """
+    Constructs and returns a Vietoris-Rips filtration of a point cloud.
+    If use_ripser is True, delegates to RipserFiltration for fast execution.
+    Otherwise, builds the filtration manually up to dimension max_dim + 1.
+    """
+    if use_ripser:
+        return RipserFiltration(points, max_dim=max_dim)
+
     F = Filtration()
     distance_matrix = cdist(points, points, metric='euclidean')
     n = len(points)
@@ -147,12 +179,20 @@ def rips_filtration(points):
     for i in range(n):
         F.add(Simplex([i]), 0.0)
 
-    for i, j in combinations(range(n), 2):
-        F.add(Simplex([i,j]), float(distance_matrix[i, j]))
+    if max_dim >= 0:
+        for i, j in combinations(range(n), 2):
+            F.add(Simplex([i,j]), float(distance_matrix[i, j]))
 
-    for i, j, k in combinations(range(n), 3):
-        value = max(distance_matrix[i, j], distance_matrix[i, k], distance_matrix[j, k])
-        F.add(Simplex([i,j,k]), float(value))
+    if max_dim >= 1:
+        for i, j, k in combinations(range(n), 3):
+            value = max(distance_matrix[i, j], distance_matrix[i, k], distance_matrix[j, k])
+            F.add(Simplex([i,j,k]), float(value))
+
+    if max_dim >= 2:
+        for i, j, k, l in combinations(range(n), 4):
+            value = max(distance_matrix[i, j], distance_matrix[i, k], distance_matrix[i, l],
+                        distance_matrix[j, k], distance_matrix[j, l], distance_matrix[k, l])
+            F.add(Simplex([i,j,k,l]), float(value))
 
     return F
     
@@ -354,6 +394,7 @@ if __name__ == "__main__":
         print(rf.filtration)
         print("Expected True |", rf.is_valid())
 
+
     if TESTING_ST:
         sc = SimplicialComplex()
         sc.add_simplex(Simplex([0,1,2]))
@@ -376,5 +417,32 @@ if __name__ == "__main__":
         print("Pairs by dimention", pd.pairs_by_dim(0), pd.pairs_by_dim(1), 
               pd.pairs_by_dim(2), sep=" | ")
         print("Infinite pairs", pd.infinite_pairs(), sep=" | ")
+        pd.barcode()
+        pd.plot_diagram()
+
+
+    if TESTING_ripser:
+        points = [(0,0), (0,1), (1,0), (1,1)]
+        rf = rips_filtration(points)
+        rf_ripser = rips_filtration(points, use_ripser=True)
+
+        print("Expected True |", rf.is_valid())
+        print("Expected True |", rf_ripser.is_valid())
+
+        print(rf.extract_pairs())
+        print(rf_ripser.extract_pairs())
+
+        
+        pd = PersistenceDiagram()
+        for pair in rf.extract_pairs():
+            pd.add_pair(pair)
+
+        pd.barcode()
+        pd.plot_diagram()
+        
+        pd = PersistenceDiagram()
+        for pair in rf_ripser.extract_pairs():
+            pd.add_pair(pair)
+
         pd.barcode()
         pd.plot_diagram()
