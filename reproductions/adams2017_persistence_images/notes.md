@@ -9,4 +9,4 @@
 
 
 ### Reproduction Strategy
-We will implement the Persistence Image vectorization algorithm in `representations.py` using weighted 2D Gaussians integrated over a discretized grid. Correctness is benchmarked on Section 6.1 from the paper by generating point clouds from 6 classic topological spaces, using core modules to compute $H_0$, $H_1$, and $H_2$ persistent homology, and evaluating classification accuracy using `scikit-learn` classifiers on the resulting image vectors.
+We will implement the Persistence Image vectorization algorithm in `representations.py`. Correctness is benchmarked on Section 6.1 from the paper by generating point clouds from 6 classic topological spaces, using core modules to compute $H_0$ and $H_1$ persistent homology, and evaluating classification accuracy using `scikit-learn` classifiers on the resulting image vectors. We take a detour by comparing TDA performance against a non-topological D2 shape distribution baseline. Furthermore, we analyze hyperparameter sensitivity (Section 6.2) and perform sparse SVM feature selection (Section 6.3).
