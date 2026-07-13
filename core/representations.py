@@ -68,12 +68,12 @@ class PersistenceImage:
             self.image, 
             origin='lower', 
             extent=[x_min, x_max, y_min, y_max], 
-            cmap='viridis', 
+            cmap='magma', 
             aspect='auto',
             vmin=vmin,
             vmax=vmax
         )
+        ax.grid(False)
         ax.set_xlabel("Birth", fontsize=15, labelpad=15)
         ax.set_ylabel("Persistence", fontsize=15, labelpad=15)
-        plt.colorbar(c, ax=ax)
         return ax
