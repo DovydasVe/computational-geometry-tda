@@ -6,17 +6,17 @@ from scipy.spatial.distance import pdist
 def generate_circle(n_points=500, noise=0.05, random_state=None):
     rng = np.random.default_rng(random_state)
     theta = rng.uniform(0, 2*np.pi, n_points)
-    x = 0.25 * np.cos(theta) + 0.5
-    y = 0.25 * np.sin(theta) + 0.5
+    x = 0.5 * np.cos(theta) + 0.5
+    y = 0.5 * np.sin(theta) + 0.5
     pts = np.column_stack((x, y, np.zeros(n_points)))
-    pts += rng.normal(0, noise, pts.shape)
+    pts[:, :2] += rng.normal(0, noise, (n_points, 2))
     return pts
 
 def generate_sphere(n_points=500, noise=0.05, random_state=None):
     rng = np.random.default_rng(random_state)
     X = rng.normal(0, 1, (n_points, 3))
     S = np.linalg.norm(X, axis=1, keepdims=True)
-    X = 0.25 * (X / S) + 0.5
+    X = 0.5 * (X / S) + 0.5
     X += rng.normal(0, noise, X.shape)
     return X
 
@@ -128,3 +128,20 @@ def compute_d2_histograms(dataset, n_bins=100, max_dist=2.0):
         histograms.append(hist_norm)
         
     return np.array(histograms)
+
+def get_pixel_bbox(idx, bounds, resolution=(20, 20)):
+    res_x, res_y = resolution
+    (x_min, x_max), (y_min, y_max) = bounds
+    
+    x_edges = np.linspace(x_min, x_max, res_x + 1)
+    y_edges = np.linspace(y_min, y_max, res_y + 1)
+    
+    row = idx // res_x
+    col = idx % res_x
+    
+    x_left = x_edges[col]
+    y_bottom = y_edges[row]
+    dx = x_edges[col + 1] - x_left
+    dy = y_edges[row + 1] - y_bottom
+    
+    return x_left, y_bottom, dx, dy

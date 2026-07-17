@@ -3,6 +3,29 @@ from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 class PersistenceImage:
+    '''
+    Parameters:
+    pd : PersistenceDiagram
+        The input persistence diagram object containing birth-death pairs.
+    sigma : float
+        The standard deviation of the Gaussian kernel representing the spread of each point.
+    resolution : tuple of int (res_x, res_y)
+        The grid resolution (number of columns and rows of pixels in the output image).
+    homology_dim : int, default=1
+        The Betti dimension (0, 1, 2) of the pairs to extract from the diagram.
+    bounds : tuple of tuples, optional
+        The bounding box for the image as ((x_min, x_max), (y_min, y_max)). 
+        If None, automatically computed from the diagram's birth-persistence range.
+    max_b : float, optional
+        The persistence scale value at which the linear weighting ramp reaches 1.0.
+        If None, defaults to the maximum persistence bound.
+
+    Methods:
+    flatten() :
+        Flattens the 2D persistence image matrix into a 1D NumPy array for machine learning compatibility.
+    plot(ax=None, vmin=None, vmax=None) :
+        Plots the 2D persistence image using a magma colormap with bicubic interpolation.
+    '''
     def __init__(self, pd, sigma, resolution, homology_dim=1, bounds=None, max_b=None):
         self.sigma = sigma
         self.resolution = resolution
@@ -68,7 +91,8 @@ class PersistenceImage:
             self.image, 
             origin='lower', 
             extent=[x_min, x_max, y_min, y_max], 
-            cmap='magma', 
+            cmap='magma',
+            interpolation='bicubic',
             aspect='auto',
             vmin=vmin,
             vmax=vmax
