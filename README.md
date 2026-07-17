@@ -16,7 +16,7 @@ A lightweight Python implementation of Topological Data Analysis (TDA) core algo
 ## Reproduced Papers
 #### Persistence Images: A Stable Vector Representation of Persistent Homology
 * **Citation**: Adams, H., Emerson, T., Kirby, M., Neville, R., Peterson, C., Shipman, P., Chepushtanova, S., Hanson, E., Motta, F., & Ziegelmeier, L. (2017). *Persistence Images: A Stable Vector Representation of Persistent Homology*. Journal of Machine Learning Research, 18(8), 1-35.
-* **Replication Scope**: Implementation of the `PersistenceImage` class in `core/representations.py`. Replication of the classification experiments with additional non-topological baseline can be found in the reproduction file at `reproductions/adams2017_persistence_images/reproduction_persistence_images.ipynb`.
+* **Replication Scope**: Implementation of the `PersistenceImage` class in `core/representations.py`. Replication of the classification experiments with additional non-topological baseline can be found in the reproduction file at `reproductions/adams_2017/reproduction_persistence_images.ipynb`.
 
 #### Topological data analysis of financial time series: Landscapes of crashes
 * **Citation**: Gidea, M., & Katz, Y. A. (2018). *Topological data analysis of financial time series: Landscapes of crashes*. Physica A: Statistical Mechanics and its Applications, 491, 820–834.
