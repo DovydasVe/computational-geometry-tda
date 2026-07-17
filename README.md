@@ -1,5 +1,3 @@
-# Computational Topological Data Analysis (TDA) Core Library
-
 A lightweight Python implementation of Topological Data Analysis (TDA) core algorithms from scratch. This project implements simplicial complexes, boundary operators, and persistent homology computation from first principles using NumPy and SciPy. The project also includes thorough case studies with TDA applications & interpretations, as well as reproductions of foundational TDA-related research papers.
 
 ---
