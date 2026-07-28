@@ -1,10 +1,11 @@
 import numpy as np
 from scipy.stats import norm
+from scipy.integrate import simpson
 import matplotlib.pyplot as plt
 
 # PersistenceImage functionality tested in reproductions/adams_2017
 # PL - PersistenceLandscapes
-TESTING_PL = False
+TESTING_PL = True
 
 class PersistenceImage:
     '''
@@ -108,20 +109,29 @@ class PersistenceImage:
 
 
 class PersistenceLandscape:
-    """
-    Computes the persistence landscape representations from a persistence diagram.
-    
+    '''
     Parameters:
-    -----------
     pd : PersistenceDiagram
         The input persistence diagram containing birth-death pairs.
     t_interval : array-like
-        1D array or sequence of values where landscape functions are evaluated.
+        1D array or sequence of values t where landscape functions are evaluated.
     homology_dim : int, default=1
-        The Betti dimension (0, 1, 2) of the pairs to extract.
+        The Betti dimension (0, 1, 2) of the pairs to extract from the diagram.
     num_layers : int, optional
         Maximum number of landscape layers (k) to retain. If None, retains all finite layers.
-    """
+
+    Methods:
+    kth_layer(k) :
+        Returns the 1-indexed k-th landscape layer function evaluated across t_interval.
+    norm(p=2, mode='global') :
+        Computes the L^p norm using numerical integration. Supports mode='global' (Bubenik 2015) and mode='cross_sectional' (mixed Bochner L^1_t(l^p_k)).
+    distance(other, p=2, mode='global') :
+        Computes the L^p distance between self and another PersistenceLandscape instance. Supports mode='global' and mode='cross_sectional'.
+    flatten() :
+        Flattens the 2D landscape matrix into a 1D NumPy array for machine learning compatibility.
+    plot(max_k=5, ax=None) :
+        Plots the top max_k landscape layers.
+    '''
     def __init__(self, pd, t_interval, homology_dim=1, num_layers=None):
         self.t_interval = np.asarray(t_interval, dtype=float)
         self.homology_dim = homology_dim
@@ -154,7 +164,67 @@ class PersistenceLandscape:
         if k < 1 or k > len(self.landscapes):
             return np.zeros_like(self.t_interval)
         return self.landscapes[k - 1]
-    
+
+    def norm(self, p=2, mode='global'):
+        """
+        Computes the L^p norm of the persistence landscape using Simpson's rule numerical integration.
+        mode : str, default='global'
+            - 'global': Standard Bubenik (2015) L^p norm on L^p(N x R): (sum_k int |lambda_k(t)|^p dt)^(1/p).
+            - 'cross_sectional': Mixed Bochner norm L^1_t(l^p_k): int (sum_k |lambda_k(t)|^p)^(1/p) dt.
+        """
+        if len(self.landscapes) == 0:
+            return 0.0
+
+        if p == np.inf:
+            return float(np.max(np.abs(self.landscapes)))
+
+        if mode == 'cross_sectional':
+            cross_p = np.sum(np.abs(self.landscapes) ** p, axis=0) ** (1.0 / p)
+            return float(simpson(cross_p, x=self.t_interval))
+        else:
+            abs_pow = np.abs(self.landscapes) ** p
+            integrals = simpson(abs_pow, x=self.t_interval, axis=1)
+            total = np.sum(integrals)
+            return float(total ** (1.0 / p))
+        
+    def distance(self, other, p=2, mode='global'):
+        """
+        Computes the L^p distance between self and another PersistenceLandscape instance.
+        mode : str, default='global'
+            - 'global': Standard Bubenik (2015) L^p distance on L^p(N x R).
+            - 'cross_sectional': Mixed Bochner L^1_t(l^p_k) distance used in time-series analysis.
+        """
+        if not np.array_equal(self.t_interval, other.t_interval):
+            raise ValueError("Landscapes must be evaluated on identical t_interval grids.")
+
+        k1, k2 = len(self.landscapes), len(other.landscapes)
+
+        max_k = max(k1, k2)
+        if max_k == 0:
+            return 0.0
+
+        l1_pad = np.pad(self.landscapes, ((0, max_k - k1), (0, 0))) if k1 < max_k else self.landscapes
+        l2_pad = np.pad(other.landscapes, ((0, max_k - k2), (0, 0))) if k2 < max_k else other.landscapes
+
+        diff = np.abs(l1_pad - l2_pad)
+        if p == np.inf:
+            return float(np.max(diff))
+
+        if mode == 'cross_sectional':
+            cross_p = np.sum(diff ** p, axis=0) ** (1.0 / p)
+            return float(simpson(cross_p, x=self.t_interval))
+        else:
+            diff_pow = diff ** p
+            integrals = simpson(diff_pow, x=self.t_interval, axis=1)
+            total = np.sum(integrals)
+            return float(total ** (1.0 / p))
+
+    def flatten(self):
+        """
+        Flattens the 2D landscape matrix into a 1D NumPy array for machine learning compatibility.
+        """
+        return self.landscapes.flatten()
+
     def plot(self, max_k=5, ax=None):
         """
         Plots the top max_k landscape layers.
@@ -171,7 +241,7 @@ class PersistenceLandscape:
         ax.grid(True, alpha=0.3)
         ax.legend()
         return ax
-
+            
 
 if __name__ == "__main__":
     if TESTING_PL:
