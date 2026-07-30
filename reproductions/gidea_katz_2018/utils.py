@@ -1,5 +1,5 @@
 import numpy as np
-
+import pandas as pd
 
 def generate_4d_white_noise_point_cloud(sigma=1.0, num_points=100, delta_range=(-0.1, 0.1), seed=None):
     if seed is not None:
@@ -53,3 +53,12 @@ def generate_gamma_transition_dataset(num_realizations=50, num_steps=100, num_po
         realizations.append(time_series)
         
     return realizations
+
+def min_max_scale(x):
+    return (x - np.min(x)) / (np.max(x) - np.min(x))
+
+def get_1000_days_prior(plot_dates, crash_date_str):
+    idx_crash = plot_dates.get_indexer(
+        [pd.Timestamp(crash_date_str)], method='nearest'
+    )[0]
+    return slice(max(0, idx_crash - 1000), idx_crash + 1)
