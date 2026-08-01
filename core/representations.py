@@ -30,6 +30,8 @@ class PersistenceImage:
         If None, defaults to the maximum persistence bound.
 
     Methods:
+    norm(p=2, mode='discrete') :
+        Computes the L^p norm of the persistence image. Supports 'discrete' (vector norm) and 'continuous' (surface integral) modes.
     flatten() :
         Flattens the 2D persistence image matrix into a 1D NumPy array for machine learning compatibility.
     plot(ax=None, vmin=None, vmax=None) :
@@ -87,7 +89,30 @@ class PersistenceImage:
             image += weight * pixel_integrals
             
         return image
-        
+
+    def norm(self, p=2, mode='discrete'):
+        """
+        Computes the L^p norm of the persistence image.
+        """
+        if p == np.inf or p == 'inf':
+            return float(np.max(np.abs(self.image)))
+
+        p = float(p)
+        if p <= 0:
+            raise ValueError("Norm order p must be positive (> 0).")
+
+        discrete_norm = float(np.sum(np.abs(self.image) ** p) ** (1.0 / p))
+
+        if mode == 'continuous':
+            (x_min, x_max), (y_min, y_max) = self.bounds
+            res_x, res_y = self.resolution
+            dx = (x_max - x_min) / res_x
+            dy = (y_max - y_min) / res_y
+            pixel_area = dx * dy
+            return discrete_norm * (pixel_area ** (1.0 / p))
+        else:
+            return discrete_norm
+      
     def flatten(self):
         return self.image.flatten()
     
@@ -246,6 +271,21 @@ class PersistenceLandscape:
         ax.legend()
         return ax
             
+
+def pc_image_norms(pc, sigma, resolution, bounds, dim=1, max_b=None):
+    rips = rips_filtration(pc, max_dim=dim, use_ripser=True)
+    
+    pd = PersistenceDiagram()
+    for pair in rips.extract_pairs():
+        if pair.dim == dim:
+            pd.add_pair(pair)
+
+    pi = PersistenceImage(pd, sigma=sigma, resolution=resolution, homology_dim=dim, bounds=bounds)
+    p1 = pi.norm(1)
+    pinf = pi.norm(np.inf)
+
+    return p1, pinf
+
 
 def pc_landscape_norms(pc, t_interval, dim=1, num_layers=None, mode="cross_sectional", scaled=True):
     rips = rips_filtration(pc, max_dim=dim, use_ripser=True)

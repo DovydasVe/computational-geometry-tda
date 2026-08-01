@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import kendalltau
+from scipy.signal import detrend, welch
 
 def generate_4d_white_noise_point_cloud(sigma=1.0, num_points=100, delta_range=(-0.1, 0.1), seed=None):
     if seed is not None:
@@ -62,3 +64,38 @@ def get_1000_days_prior(plot_dates, crash_date_str):
         [pd.Timestamp(crash_date_str)], method='nearest'
     )[0]
     return slice(max(0, idx_crash - 1000), idx_crash + 1)
+
+def kendall_report(name, vals):
+    tau, p = kendalltau(np.arange(len(vals)), vals)
+    print(f"{name:20s}  τ = {tau:+.4f}  (p = {p:.4f})")
+
+def compute_indicators(series, dates, crash_date_str,
+                       stat_window=500, eval_days=250,
+                       detrend_win=False):
+    """
+    detrend_win = True: linear detrend inside each 500-day window
+    detrend_win = False: raw window
+    """
+    idx_crash = dates.get_indexer([pd.Timestamp(crash_date_str)], method='nearest')[0]
+    eval_indices = range(idx_crash - eval_days + 1, idx_crash + 1)
+    eval_dates = dates[eval_indices]
+
+    variances, acfs, specs = [], [], []
+
+    for idx in eval_indices:
+        win = series[max(0, idx - stat_window + 1) : idx + 1]
+
+        if detrend_win:
+            win_proc = detrend(win, type='linear')
+        else:
+            win_proc = win
+
+        variances.append(np.var(win_proc))
+
+        acfs.append(pd.Series(win_proc).autocorr(lag=1))
+
+        freqs, psd = welch(win_proc, nperseg=min(128, len(win_proc)))
+        mask = freqs <= (0.1 * np.max(freqs))
+        specs.append(np.mean(psd[mask]))
+
+    return eval_dates, np.array(variances), np.array(acfs), np.array(specs)
