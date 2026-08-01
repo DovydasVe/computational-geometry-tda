@@ -7,6 +7,7 @@ A Python implementation of Topological Data Analysis (TDA) core algorithms from 
 * **Persistent Homology (`core/persistence.py`)**: Support for ordered filtrations (Vietoris-Rips and Star filtrations). Implements the persistence-compatible boundary matrix reduction modulo 2 to extract birth-death persistence pairs and Betti numbers. Supports diagram visualization (scatterplots and barcodes) with consistent color mappings.
 * **Linear Algebra Helper (`core/linear_algebra.py`)**: Optimized matrix reduction over $\mathbb{Z}_2$ running in $\mathcal{O}(n^2)$ additions.
 * **Vectorization & Representations (`core/representations.py`)**: Vector representations of persistent homology to integrate TDA with standard machine learning. Includes the implementation of **Persistence Images (Adams et al., 2017)**.
+* **Time-Series TDA Helpers (`core/time_series.py`)**: Utilities for computing sliding-window topological representations over multivariate time series. Includes functions to evaluate rolling Persistence Landscape norms ($L^1, L^2$) and Persistence Image norms ($L^1, L^\infty$).
 
 ## Case Studies & Applications
 * **Mathematical Structures (`notebooks/case_study_mathematical_structures.ipynb`)**: Demonstrates Betti numbers, boundary matrices, and persistent homology computation on standard geometric shapes: the solid disk $B^2$, circle $S^1$, hollow 2-sphere $S^2$ (tetrahedron boundary), and 2-torus $T^2$.
