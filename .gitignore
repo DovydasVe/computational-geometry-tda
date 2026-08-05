@@ -1,4 +1,4 @@
 **/__pycache__/
 *.pkl
 *.csv
-today.ipynb
+**/data/
