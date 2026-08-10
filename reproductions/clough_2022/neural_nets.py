@@ -156,7 +156,7 @@ def train_initial_model(
 
     if verbose:
         print(f"Starting Supervised Training ({num_epochs} Epochs, Device: {device})", flush=True)
-    for _ in range(1, num_epochs + 1):
+    for epoch in range(1, num_epochs + 1):
         model.train()
         train_bce_loss = 0.0
         for x_batch, y_batch in train_loader:
@@ -168,6 +168,10 @@ def train_initial_model(
             loss.backward()
             optimizer.step()
             train_bce_loss += loss.item() * x_batch.size(0)
+
+        avg_loss = train_bce_loss / len(train_dataset_pairs)
+        if verbose and (epoch == 1 or epoch % 10 == 0):
+            print(f"Epoch {epoch}/{num_epochs}: Loss {avg_loss:.5f}", flush=True)
 
     if verbose:
         print(f"Supervised Training Complete on {device}.", flush=True)

@@ -1,6 +1,7 @@
 import copy
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
 from topologylayer.nn import TopKBarcodeLengths
 
@@ -71,8 +72,9 @@ def post_processing_framework(
         for _ in range(num_iter_topo):
             optimizer.zero_grad()
             Z = model_topo(x_in)
+            Z_64 = F.interpolate(Z, size=(64, 64), mode="bilinear", align_corners=False)
             
-            L_topo = compute_topological_loss_single(Z, sample_betti, dgminfo_layer, max_k=max_k, device=device)
+            L_topo = compute_topological_loss_single(Z_64, sample_betti, dgminfo_layer, max_k=max_k, device=device)
             L_sqdiff = l2_loss_fn(original_output, Z) * L_sqdiff_weight
             
             (L_topo + L_sqdiff).backward()
